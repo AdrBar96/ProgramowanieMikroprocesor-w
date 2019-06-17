@@ -1,0 +1,94 @@
+// Definicja bilbliotek
+
+#include "aduc831.h"
+
+// Definicja zmiennych
+
+int Counter_1 = 0;
+
+// Definicja funkcji
+
+// Funckja realizujaca wykrywanie zbocza opadajacego przycisku PR2 (P3.3)
+
+void PR2_opadanie(void) interrupt 2 // 2 - adres interrupt 2
+{
+	// Ustawienie wartosci rejestru timera dla t=10 ms
+	
+	TH0 = 0xDC; 
+	TL0 = 0x01;
+	P3 ^= (1<<0); // wpisanie bitu 0 z portu P3 do rejestru
+}
+
+//Przerwanie przy przepelnieniu timera 
+
+void PrzepelnienieTimera(void) interrupt 1 // 1 - adres timera 0
+{
+	if (P3 == 0xF7) // Jezeli P3.3 = 0 ( P3 = 1111 0111) 
+		{
+			P3 ^= (1<<0); //wpisanie bitu 0 z portu P3 do rejestru
+			Counter_1++;
+		}	
+} 
+// Koniec funkcji timera
+
+void LED_Line(int I_Counter_1)
+{
+	switch (I_Counter_1)
+  {
+  case 1: 
+		P2= 0xEF; // Zapalenie diody LED1 (P2 = 1110 1111)
+	break;
+	
+  case 2: 
+		P2= 0xCF; // Zapalenie diody LED1&LED2 (P2 = 1100 1111)
+	break;
+	
+  case 3: 
+		P2 = 0x8F; // Zapalenie diody LED1&LED2&LED3 (P2 = 1000 1111)
+	break;
+	
+  case 4: 
+		P2 = 0x0F; // Zapalenie diody LED1&LED2&LED3&LED4 (P2 = 0000 1111)
+	break;
+	
+	case 5: 
+		P2 = 0xFF; // Zgaszenie wszystkich diod (P2 = 1111 1111) - przepelnienie licznika
+		Counter_1 = 0; // Reset licznika
+	break;
+  
+  }
+} 
+// Koniec funkcji LED_Line
+
+// Funkcja main
+
+void main (void)
+{
+IT1 = 1;   // IT1 = 1 then falling edge on interrupt
+EX1 = 1;   // Wlaczenie Interrupt 1 - przerwania 1
+ET0 = 1;	 // Wlaczenie interrupt od timera 0
+EA  = 1;   // Wlaczenie globalnych przerwan
+	
+//definicja timera
+TMOD = 	0x01; 	// ustawienie rejestru timera jako 16-bitowego
+TH0  =  0xDC;   // ustawienie czasu zliczania timera 0
+TL0  =  0x01; 	
+TR0  =  1; 			// Start timera
+
+
+// Glowna petla programu
+while (1)
+  {
+		LED_Line(Counter_1); //Funkcja obslugujaca stan diod	
+	}
+} 
+//Koniec glownej petli porgramu
+
+
+
+
+
+
+
+
+
